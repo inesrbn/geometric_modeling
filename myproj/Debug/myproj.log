@@ -1,0 +1,13 @@
+﻿  main.cpp
+  myFace.cpp
+  myHalfedge.cpp
+  myMesh.cpp
+  myVertex.cpp
+C:\Users\inesr\Downloads\geometric_modeling\meshviewer-init\meshviewer-init\myproj\myMesh.cpp(52,15): warning C4101: 'hedges' : variable locale non référencée
+  myPoint3D.cpp
+  myVector3D.cpp
+  Génération de code en cours...
+LINK : warning LNK4217: le symbole '_sprintf_s' défini dans 'MSVCRTD.lib(error.obj)' est importé par 'nfd.lib(nfd_win.obj)' dans la fonction '"int __cdecl AppendExtensionToSpecBuf(char const *,char *,unsigned int)" (?AppendExtensionToSpecBuf@@YAHPBDPADI@Z)'
+nfd.lib(nfd_common.obj) : warning LNK4099: PDB 'vc110.pdb' n'a pu être trouvé avec 'nfd.lib(nfd_common.obj)' ou sur 'C:\Users\inesr\Downloads\geometric_modeling\meshviewer-init\meshviewer-init\Debug\vc110.pdb' ; l'objet sera lié sans informations de débogage
+nfd.lib(nfd_win.obj) : warning LNK4099: PDB 'vc110.pdb' n'a pu être trouvé avec 'nfd.lib(nfd_win.obj)' ou sur 'C:\Users\inesr\Downloads\geometric_modeling\meshviewer-init\meshviewer-init\Debug\vc110.pdb' ; l'objet sera lié sans informations de débogage
+  myproj.vcxproj -> C:\Users\inesr\Downloads\geometric_modeling\meshviewer-init\meshviewer-init\Debug\myproj.exe
