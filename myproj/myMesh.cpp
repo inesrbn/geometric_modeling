@@ -151,7 +151,16 @@ bool myMesh::readFile(std::string filename)
 
 void myMesh::computeNormals()
 {
-	/**** TODO ****/
+	// Étape A : Calculer la normale de chaque face
+	for (unsigned int i = 0; i < faces.size(); i++) {
+		if (faces[i]) faces[i]->computeNormal();
+	}
+
+	// Étape B : Calculer la normale de chaque sommet 
+	// (Dépend de l'étape A car utilise faces[i]->normal)
+	for (unsigned int i = 0; i < vertices.size(); i++) {
+		if (vertices[i]) vertices[i]->computeNormal();
+	}
 }
 
 void myMesh::normalize()
