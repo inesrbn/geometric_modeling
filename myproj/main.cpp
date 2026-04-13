@@ -251,19 +251,35 @@ void display()
 		glUniform4fv(glGetUniformLocation(shaderprogram, "kd"), 1, &color[0]);
 
 		vector <GLuint> silhouette_edges;
-		for (vector<myHalfedge *>::iterator it = m->halfedges.begin(); it != m->halfedges.end(); it++)
+		for (vector<myHalfedge*>::iterator it = m->halfedges.begin(); it != m->halfedges.end(); it++)
 		{
-			/**** TODO: WRITE CODE TO COMPUTE SILHOUETTE ****/
-			myHalfedge *e = (*it);
-			myVertex *v1 = (*it)->source;
-			if ((*it)->twin == NULL) continue;
-			myVertex *v2 = (*it)->twin->source;
+			myHalfedge* e = (*it);
+			if (e->twin == NULL || e->adjacent_face == NULL || e->twin->adjacent_face == NULL) continue;
 
-			if ( 0 /*ADD THE CONDITION TO CHECK IF THE HALFEDGE DEFINED BY (V1, V2) IS A SILHOUETTE EDGE*/ )
+			myVertex* v1 = e->source;
+			myVertex* v2 = e->twin->source;
+
+			// Définir le vecteur de vue (V)
+			// Dans ce viewer, la caméra regarde vers l'avant
+			myVector3D viewVector = camera_forward;
+
+			// Récupérer les normales des deux faces adjacentes
+			myVector3D* n1 = e->adjacent_face->normal;
+			myVector3D* n2 = e->twin->adjacent_face->normal;
+
+			// Calcul du produit scalaire avec l'opérateur *
+			// comme n1 et n2 sont des pointeurs, on doit mettre (*n1) 
+			// pour accéder à l'objet vecteur lui-même.
+			double dot1 = (*n1) * viewVector;
+			double dot2 = (*n2) * viewVector;
+
+			// Condition de silhouette : les signes de dot1 et dot2 doivent être différents
+			// L'une est visible, l'autre est cachée
+			if ((dot1 > 0 && dot2 <= 0) || (dot1 <= 0 && dot2 > 0))
 			{
 				silhouette_edges.push_back(v1->index);
 				silhouette_edges.push_back(v2->index);
-			}				
+			}
 		}
 
 		GLuint silhouette_edges_buffer;

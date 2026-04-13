@@ -228,9 +228,8 @@ void myMesh::triangulate()
 }
 
 //return false if already triangle, true othewise.
-bool myMesh::triangulate(myFace *f)
+bool myMesh::triangulate(myFace* f)
 {
 	/**** TODO ****/
 	return false;
 }
-
