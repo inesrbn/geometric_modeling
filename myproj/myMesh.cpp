@@ -26,14 +26,14 @@ void myMesh::clear()
 	for (unsigned int i = 0; i < halfedges.size(); i++) if (halfedges[i]) delete halfedges[i];
 	for (unsigned int i = 0; i < faces.size(); i++) if (faces[i]) delete faces[i];
 
-	vector<myVertex *> empty_vertices;    vertices.swap(empty_vertices);
-	vector<myHalfedge *> empty_halfedges; halfedges.swap(empty_halfedges);
-	vector<myFace *> empty_faces;         faces.swap(empty_faces);
+	vector<myVertex*> empty_vertices;    vertices.swap(empty_vertices);
+	vector<myHalfedge*> empty_halfedges; halfedges.swap(empty_halfedges);
+	vector<myFace*> empty_faces;         faces.swap(empty_faces);
 }
 
 void myMesh::checkMesh()
 {
-	vector<myHalfedge *>::iterator it;
+	vector<myHalfedge*>::iterator it;
 	for (it = halfedges.begin(); it != halfedges.end(); it++)
 	{
 		if ((*it)->twin == NULL)
@@ -199,18 +199,18 @@ void myMesh::normalize()
 }
 
 
-void myMesh::splitFaceTRIS(myFace *f, myPoint3D *p)
+void myMesh::splitFaceTRIS(myFace* f, myPoint3D* p)
 {
 	/**** TODO ****/
 }
 
-void myMesh::splitEdge(myHalfedge *e1, myPoint3D *p)
+void myMesh::splitEdge(myHalfedge* e1, myPoint3D* p)
 {
 
 	/**** TODO ****/
 }
 
-void myMesh::splitFaceQUADS(myFace *f, myPoint3D *p)
+void myMesh::splitFaceQUADS(myFace* f, myPoint3D* p)
 {
 	/**** TODO ****/
 }
@@ -224,12 +224,107 @@ void myMesh::subdivisionCatmullClark()
 
 void myMesh::triangulate()
 {
-	/**** TODO ****/
+	// on copie la liste actuelle pour ne pas boucler à l'infini sur les nouveaux triangles
+	vector<myFace*> original_faces = faces;
+
+	for (unsigned int i = 0; i < original_faces.size(); i++) {
+		// la fonction triangulate(f) s'occupe de la découpe en éventail
+		triangulate(original_faces[i]);
+	}
+
+	// mise à jour finale des normales
+	computeNormals();
+	cout << "Maillage triangule avec succes." << endl;
 }
 
 //return false if already triangle, true othewise.
 bool myMesh::triangulate(myFace* f)
 {
-	/**** TODO ****/
-	return false;
+	// vérifier que la face et sa demi-arête existent
+	if (f == NULL || f->adjacent_halfedge == NULL) return false;
+
+	// récupérer toutes les demi-arêtes originales de la face dans l'ordre
+	vector<myHalfedge*> face_edges;
+	myHalfedge* curr = f->adjacent_halfedge;
+	do {
+		face_edges.push_back(curr);
+		curr = curr->next;
+	} while (curr != f->adjacent_halfedge && curr != NULL); // anti-boucle infinie
+
+	int n = face_edges.size();
+	if (n <= 3) return false; // si déjà un triangle -> false
+
+	// préparer les faces
+	// un polygone à N sommets donne (N - 2) triangles.
+	// le premier triangle réutilise la face 'f', on crée les autres.
+	vector<myFace*> tri_faces;
+	tri_faces.push_back(f);
+	for (int i = 0; i < n - 3; i++) {
+		myFace* newF = new myFace();
+		faces.push_back(newF);
+		tri_faces.push_back(newF);
+	}
+
+	// préparer les diagonales
+	// il nous faut (N - 3) paires de demi-arêtes internes pour couper le polygone.
+	vector<myHalfedge*> diag_out(n - 3); // diagonales qui partent du sommet 0
+	vector<myHalfedge*> diag_in(n - 3);  // diagonales qui reviennent vers le sommet 0
+
+	for (int i = 0; i < n - 3; i++) {
+		diag_out[i] = new myHalfedge();
+		diag_in[i] = new myHalfedge();
+
+		// connexion des twins
+		diag_out[i]->twin = diag_in[i];
+		diag_in[i]->twin = diag_out[i];
+
+		// assignation des sources (le sommet 0 est notre pivot)
+		diag_out[i]->source = face_edges[0]->source;
+		diag_in[i]->source = face_edges[i + 2]->source;
+
+		// ajout au maillage global
+		halfedges.push_back(diag_out[i]);
+		halfedges.push_back(diag_in[i]);
+	}
+
+	// connecter tous les triangles ensemble
+	for (int i = 0; i < n - 2; i++) {
+		myFace* current_face = tri_faces[i];
+
+		// chaque triangle est formé de 3 arêtes : eA, eB, eC
+		myHalfedge* eA; // arête sortant du sommet 0
+		myHalfedge* eB = face_edges[i + 1]; // l'arête originale du bord du polygone
+		myHalfedge* eC; // arête retournant vers le sommet 0
+
+		// déterminer eA
+		if (i == 0) {
+			eA = face_edges[0]; // pour le 1er triangle, c'est la 1ère arête originale
+		}
+		else {
+			eA = diag_out[i - 1]; // pour les autres, c'est la diagonale sortante
+		}
+
+		// déterminer eC
+		if (i == n - 3) {
+			eC = face_edges[n - 1]; // pour le dernier triangle, c'est la dernière arête originale
+		}
+		else {
+			eC = diag_in[i]; // pour les autres, c'est la diagonale entrante
+		}
+
+		// chaînage
+		eA->next = eB; eB->prev = eA;
+		eB->next = eC; eC->prev = eB;
+		eC->next = eA; eA->prev = eC;
+
+		// assigner la face courante aux 3 demi-arêtes
+		eA->adjacent_face = current_face;
+		eB->adjacent_face = current_face;
+		eC->adjacent_face = current_face;
+
+		// assigner une arête de référence à la face
+		current_face->adjacent_halfedge = eA;
+	}
+
+	return true;
 }

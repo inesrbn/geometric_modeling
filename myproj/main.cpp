@@ -387,7 +387,7 @@ void initMesh()
 	closest_face = NULL;
 
 	m = new myMesh();
-	if (m->readFile("dolphin.obj")) {
+	if (m->readFile("concave_test.obj")) {
 		m->computeNormals();
 		makeBuffers(m);
 	}
