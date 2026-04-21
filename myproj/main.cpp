@@ -387,7 +387,7 @@ void initMesh()
 	closest_face = NULL;
 
 	m = new myMesh();
-	if (m->readFile("concave_test.obj")) {
+	if (m->readFile("gear.obj")) {
 		m->computeNormals();
 		makeBuffers(m);
 	}

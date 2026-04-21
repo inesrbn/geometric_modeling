@@ -238,93 +238,248 @@ void myMesh::triangulate()
 }
 
 //return false if already triangle, true othewise.
+//bool myMesh::triangulate(myFace* f)
+//{
+//	// vérifier que la face et sa demi-arête existent
+//	if (f == NULL || f->adjacent_halfedge == NULL) return false;
+//
+//	// récupérer toutes les demi-arêtes originales de la face dans l'ordre
+//	vector<myHalfedge*> face_edges;
+//	myHalfedge* curr = f->adjacent_halfedge;
+//	do {
+//		face_edges.push_back(curr);
+//		curr = curr->next;
+//	} while (curr != f->adjacent_halfedge && curr != NULL); // anti-boucle infinie
+//
+//	int n = face_edges.size();
+//	if (n <= 3) return false; // si déjà un triangle -> false
+//
+//	// préparer les faces
+//	// un polygone à N sommets donne (N - 2) triangles.
+//	// le premier triangle réutilise la face 'f', on crée les autres.
+//	vector<myFace*> tri_faces;
+//	tri_faces.push_back(f);
+//	for (int i = 0; i < n - 3; i++) {
+//		myFace* newF = new myFace();
+//		faces.push_back(newF);
+//		tri_faces.push_back(newF);
+//	}
+//
+//	// préparer les diagonales
+//	// il nous faut (N - 3) paires de demi-arêtes internes pour couper le polygone.
+//	vector<myHalfedge*> diag_out(n - 3); // diagonales qui partent du sommet 0
+//	vector<myHalfedge*> diag_in(n - 3);  // diagonales qui reviennent vers le sommet 0
+//
+//	for (int i = 0; i < n - 3; i++) {
+//		diag_out[i] = new myHalfedge();
+//		diag_in[i] = new myHalfedge();
+//
+//		// connexion des twins
+//		diag_out[i]->twin = diag_in[i];
+//		diag_in[i]->twin = diag_out[i];
+//
+//		// assignation des sources (le sommet 0 est notre pivot)
+//		diag_out[i]->source = face_edges[0]->source;
+//		diag_in[i]->source = face_edges[i + 2]->source;
+//
+//		// ajout au maillage global
+//		halfedges.push_back(diag_out[i]);
+//		halfedges.push_back(diag_in[i]);
+//	}
+//
+//	// connecter tous les triangles ensemble
+//	for (int i = 0; i < n - 2; i++) {
+//		myFace* current_face = tri_faces[i];
+//
+//		// chaque triangle est formé de 3 arêtes : eA, eB, eC
+//		myHalfedge* eA; // arête sortant du sommet 0
+//		myHalfedge* eB = face_edges[i + 1]; // l'arête originale du bord du polygone
+//		myHalfedge* eC; // arête retournant vers le sommet 0
+//
+//		// déterminer eA
+//		if (i == 0) {
+//			eA = face_edges[0]; // pour le 1er triangle, c'est la 1ère arête originale
+//		}
+//		else {
+//			eA = diag_out[i - 1]; // pour les autres, c'est la diagonale sortante
+//		}
+//
+//		// déterminer eC
+//		if (i == n - 3) {
+//			eC = face_edges[n - 1]; // pour le dernier triangle, c'est la dernière arête originale
+//		}
+//		else {
+//			eC = diag_in[i]; // pour les autres, c'est la diagonale entrante
+//		}
+//
+//		// chaînage
+//		eA->next = eB; eB->prev = eA;
+//		eB->next = eC; eC->prev = eB;
+//		eC->next = eA; eA->prev = eC;
+//
+//		// assigner la face courante aux 3 demi-arêtes
+//		eA->adjacent_face = current_face;
+//		eB->adjacent_face = current_face;
+//		eC->adjacent_face = current_face;
+//
+//		// assigner une arête de référence à la face
+//		current_face->adjacent_halfedge = eA;
+//	}
+//
+//	return true;
+//}
+
+//triangulate with ear clipping
 bool myMesh::triangulate(myFace* f)
 {
-	// vérifier que la face et sa demi-arête existent
 	if (f == NULL || f->adjacent_halfedge == NULL) return false;
 
-	// récupérer toutes les demi-arêtes originales de la face dans l'ordre
-	vector<myHalfedge*> face_edges;
+
+	vector<myHalfedge*> edges;
 	myHalfedge* curr = f->adjacent_halfedge;
 	do {
-		face_edges.push_back(curr);
+		edges.push_back(curr);
 		curr = curr->next;
-	} while (curr != f->adjacent_halfedge && curr != NULL); // anti-boucle infinie
+	} while (curr != f->adjacent_halfedge && curr != NULL);
 
-	int n = face_edges.size();
-	if (n <= 3) return false; // si déjà un triangle -> false
 
-	// préparer les faces
-	// un polygone à N sommets donne (N - 2) triangles.
-	// le premier triangle réutilise la face 'f', on crée les autres.
-	vector<myFace*> tri_faces;
-	tri_faces.push_back(f);
-	for (int i = 0; i < n - 3; i++) {
-		myFace* newF = new myFace();
-		faces.push_back(newF);
-		tri_faces.push_back(newF);
+	if (edges.size() <= 3) return false;
+
+
+	// Calcul de la normale du polygone (Méthode de Newell)
+	myVector3D normal(0, 0, 0);
+	for (size_t i = 0; i < edges.size(); i++) {
+		myPoint3D* p1 = edges[i]->source->point;
+		myPoint3D* p2 = edges[(i + 1) % edges.size()]->source->point;
+		normal.dX += (p1->Y - p2->Y) * (p1->Z + p2->Z);
+		normal.dY += (p1->Z - p2->Z) * (p1->X + p2->X);
+		normal.dZ += (p1->X - p2->X) * (p1->Y + p2->Y);
+	}
+	normal.normalize();
+
+
+	while (edges.size() > 3) {
+		bool earFound = false;
+		int n = edges.size();
+
+
+		for (int i = 0; i < n; i++) {
+			int prev = (i - 1 + n) % n;
+			int next = (i + 1) % n;
+
+
+			// Environment = [Vi-1;Vi; Vi+1]
+			myPoint3D* Vi_minus_1 = edges[prev]->source->point;
+			myPoint3D* Vi = edges[i]->source->point;
+			myPoint3D* Vi_plus_1 = edges[next]->source->point;
+
+
+			// if Vi is convexe :
+			myVector3D u = *Vi - *Vi_minus_1;
+			myVector3D v = *Vi_plus_1 - *Vi;
+			if ((u.crossproduct(v) * normal) > 1e-5) {
+
+
+				// if has no vertex inside :
+				bool has_no_vertex_inside = true;
+				for (int j = 0; j < n; j++) {
+					if (j == prev || j == i || j == next) continue;
+					myPoint3D* p = edges[j]->source->point;
+
+
+					myVector3D u1 = *Vi - *Vi_minus_1;
+					myVector3D v1 = *p - *Vi_minus_1;
+					myVector3D u2 = *Vi_plus_1 - *Vi;
+					myVector3D v2 = *p - *Vi;
+					myVector3D u3 = *Vi_minus_1 - *Vi_plus_1;
+					myVector3D v3 = *p - *Vi_plus_1;
+
+
+					if ((u1.crossproduct(v1) * normal) >= -1e-5 &&
+						(u2.crossproduct(v2) * normal) >= -1e-5 &&
+						(u3.crossproduct(v3) * normal) >= -1e-5) {
+						has_no_vertex_inside = false;
+						break;
+					}
+				}
+
+
+				if (has_no_vertex_inside) {
+					// clip Vi+1 and Vi-1
+					myHalfedge* e_prev = edges[prev];
+					myHalfedge* e_curr = edges[i];
+
+
+					myHalfedge* diag_in = new myHalfedge();
+					myHalfedge* diag_out = new myHalfedge();
+					diag_in->twin = diag_out;
+					diag_out->twin = diag_in;
+
+
+					diag_in->source = edges[next]->source;
+					diag_out->source = edges[prev]->source;
+
+
+					halfedges.push_back(diag_in);
+					halfedges.push_back(diag_out);
+
+
+					myFace* newFace = new myFace();
+					faces.push_back(newFace);
+					newFace->adjacent_halfedge = e_prev;
+
+
+					e_prev->next = e_curr;   e_curr->prev = e_prev;
+					e_curr->next = diag_in;  diag_in->prev = e_curr;
+					diag_in->next = e_prev;  e_prev->prev = diag_in;
+
+
+					e_prev->adjacent_face = newFace;
+					e_curr->adjacent_face = newFace;
+					diag_in->adjacent_face = newFace;
+
+
+					diag_out->next = edges[next];
+					diag_out->prev = edges[(prev - 1 + n) % n];
+					edges[next]->prev = diag_out;
+					edges[(prev - 1 + n) % n]->next = diag_out;
+
+
+					diag_out->adjacent_face = f;
+					f->adjacent_halfedge = diag_out;
+
+
+					// remove Vi
+					edges[prev] = diag_out;
+					edges.erase(edges.begin() + i);
+
+
+					earFound = true;
+					break;
+				}
+			}
+		}
+
+
+		if (!earFound) {
+			cout << "Attention : Poly concavite bloquee." << endl;
+			break;
+		}
 	}
 
-	// préparer les diagonales
-	// il nous faut (N - 3) paires de demi-arêtes internes pour couper le polygone.
-	vector<myHalfedge*> diag_out(n - 3); // diagonales qui partent du sommet 0
-	vector<myHalfedge*> diag_in(n - 3);  // diagonales qui reviennent vers le sommet 0
 
-	for (int i = 0; i < n - 3; i++) {
-		diag_out[i] = new myHalfedge();
-		diag_in[i] = new myHalfedge();
+	if (edges.size() == 3) {
+		edges[0]->next = edges[1]; edges[1]->prev = edges[0];
+		edges[1]->next = edges[2]; edges[2]->prev = edges[1];
+		edges[2]->next = edges[0]; edges[0]->prev = edges[2];
 
-		// connexion des twins
-		diag_out[i]->twin = diag_in[i];
-		diag_in[i]->twin = diag_out[i];
 
-		// assignation des sources (le sommet 0 est notre pivot)
-		diag_out[i]->source = face_edges[0]->source;
-		diag_in[i]->source = face_edges[i + 2]->source;
-
-		// ajout au maillage global
-		halfedges.push_back(diag_out[i]);
-		halfedges.push_back(diag_in[i]);
+		edges[0]->adjacent_face = f;
+		edges[1]->adjacent_face = f;
+		edges[2]->adjacent_face = f;
+		f->adjacent_halfedge = edges[0];
 	}
 
-	// connecter tous les triangles ensemble
-	for (int i = 0; i < n - 2; i++) {
-		myFace* current_face = tri_faces[i];
-
-		// chaque triangle est formé de 3 arêtes : eA, eB, eC
-		myHalfedge* eA; // arête sortant du sommet 0
-		myHalfedge* eB = face_edges[i + 1]; // l'arête originale du bord du polygone
-		myHalfedge* eC; // arête retournant vers le sommet 0
-
-		// déterminer eA
-		if (i == 0) {
-			eA = face_edges[0]; // pour le 1er triangle, c'est la 1ère arête originale
-		}
-		else {
-			eA = diag_out[i - 1]; // pour les autres, c'est la diagonale sortante
-		}
-
-		// déterminer eC
-		if (i == n - 3) {
-			eC = face_edges[n - 1]; // pour le dernier triangle, c'est la dernière arête originale
-		}
-		else {
-			eC = diag_in[i]; // pour les autres, c'est la diagonale entrante
-		}
-
-		// chaînage
-		eA->next = eB; eB->prev = eA;
-		eB->next = eC; eC->prev = eB;
-		eC->next = eA; eA->prev = eC;
-
-		// assigner la face courante aux 3 demi-arêtes
-		eA->adjacent_face = current_face;
-		eB->adjacent_face = current_face;
-		eC->adjacent_face = current_face;
-
-		// assigner une arête de référence à la face
-		current_face->adjacent_halfedge = eA;
-	}
 
 	return true;
 }
