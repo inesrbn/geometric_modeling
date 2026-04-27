@@ -7,6 +7,10 @@
 #include <GL/glew.h>
 #include "myvector3d.h"
 
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+
 using namespace std;
 
 myMesh::myMesh(void)
@@ -481,5 +485,120 @@ bool myMesh::triangulate(myFace* f)
 	}
 
 
+	return true;
+}
+
+
+
+
+void lierDemiArete(myHalfedge* h, myVertex* a, myVertex* b, std::map<std::pair<myVertex*, myVertex*>, myHalfedge*>& edgeMap) {
+	std::pair<myVertex*, myVertex*> twinKey = std::make_pair(b, a);
+	std::map<std::pair<myVertex*, myVertex*>, myHalfedge*>::iterator it = edgeMap.find(twinKey);
+
+	if (it != edgeMap.end()) {
+		h->twin = it->second;
+		it->second->twin = h;
+	}
+	else {
+		edgeMap[std::make_pair(a, b)] = h;
+	}
+}
+
+void creerTriangle(myMesh* m, myVertex* v1, myVertex* v2, myVertex* v3, std::map<std::pair<myVertex*, myVertex*>, myHalfedge*>& edgeMap) {
+	// ignorer triangles degeneres
+	if (v1 == NULL || v2 == NULL || v3 == NULL) return;
+	if (v1 == v2 || v2 == v3 || v3 == v1) return;
+
+	// allouer face et demi-aretes
+	myFace* f = new myFace();
+	myHalfedge* h1 = new myHalfedge();
+	myHalfedge* h2 = new myHalfedge();
+	myHalfedge* h3 = new myHalfedge();
+
+	m->faces.push_back(f);
+	m->halfedges.push_back(h1);
+	m->halfedges.push_back(h2);
+	m->halfedges.push_back(h3);
+
+	// assigner sources
+	h1->source = v1; h2->source = v2; h3->source = v3;
+
+	// originof: ne pas ecraser s'il existe deja
+	if (v1->originof == NULL) v1->originof = h1;
+	if (v2->originof == NULL) v2->originof = h2;
+	if (v3->originof == NULL) v3->originof = h3;
+
+	// chainage
+	h1->next = h2; h2->next = h3; h3->next = h1;
+	h1->prev = h3; h2->prev = h1; h3->prev = h2;
+
+	// liaisons face et demi-aretes
+	h1->adjacent_face = f; h2->adjacent_face = f; h3->adjacent_face = f;
+	f->adjacent_halfedge = h1;
+
+	// liaison des twins
+	lierDemiArete(h1, v1, v2, edgeMap);
+	lierDemiArete(h2, v2, v3, edgeMap);
+	lierDemiArete(h3, v3, v1, edgeMap);
+}
+
+
+//surface of revolution
+bool myMesh::generateRevolutionMesh(const std::vector<std::pair<double, double> >& profile, int slices) {
+	
+	this->clear();
+
+	int numPoints = profile.size();
+	if (numPoints < 2 || slices < 3) {
+		cout << "Erreur : profil invalide ou trop peu de slices." << endl;
+		return false;
+	}
+
+	// création des sommets
+	for (int i = 0; i < numPoints; ++i) {
+		double r = profile[i].first;
+		double z = profile[i].second;
+
+		for (int j = 0; j < slices; ++j) {
+			double theta = (2.0 * M_PI * j) / slices;
+			double x = r * cos(theta);
+			double y = r * sin(theta);
+
+			myVertex* v = new myVertex();
+			v->point = new myPoint3D(x, y, z);
+			v->originof = NULL;
+			this->vertices.push_back(v);
+		}
+	}
+
+	// map pour lier les demi-aretes jumelles (twins)
+	std::map<std::pair<myVertex*, myVertex*>, myHalfedge*> edgeMap;
+
+	// parcours des quads (entre anneaux) et creation de deux triangles par quad
+	for (int i = 0; i < numPoints - 1; ++i) {
+		for (int j = 0; j < slices; ++j) {
+			int j_next = (j + 1) % slices;
+
+			myVertex* v00 = this->vertices[i * slices + j];
+			myVertex* v10 = this->vertices[(i + 1) * slices + j];
+			myVertex* v11 = this->vertices[(i + 1) * slices + j_next];
+			myVertex* v01 = this->vertices[i * slices + j_next];
+
+			// deux triangles couvrant le quad
+			creerTriangle(this, v00, v10, v11, edgeMap);
+			creerTriangle(this, v00, v11, v01, edgeMap);
+		}
+	}
+
+	// calcul des normales avec des boucles for classiques
+	for (unsigned int i = 0; i < faces.size(); ++i) {
+		if (faces[i]) faces[i]->computeNormal();
+	}
+
+	for (unsigned int i = 0; i < vertices.size(); ++i) {
+		if (vertices[i]) vertices[i]->computeNormal();
+	}
+
+	cout << "Surface de revolution generee avec succes !" << endl;
 	return true;
 }

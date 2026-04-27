@@ -157,6 +157,25 @@ void menu(int item)
 			makeBuffers(m);
 			break;
 	    }
+
+	case MENU_GENERATE:
+	{
+		int slices = 32;
+
+		// exemple de profil
+		std::vector<std::pair<double,double>> profile = {
+			{0.5, 1.0},
+			{0.5, -1.0},
+
+		};
+
+		// genere la surface de revolution a partir du profil en memoire
+		if (m->generateRevolutionMesh(profile, slices)) {
+			makeBuffers(m);
+		}
+		break;
+	}
+
 	case MENU_EXIT:
 		{
 			m->clear();

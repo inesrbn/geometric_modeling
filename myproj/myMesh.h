@@ -32,5 +32,7 @@ public:
 
 	myMesh(void);
 	~myMesh(void);
+
+	bool generateRevolutionMesh(const std::vector<std::pair<double, double> >& profile, int slices);
 };
 
