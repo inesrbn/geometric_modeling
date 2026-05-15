@@ -21,7 +21,8 @@ myMesh::myMesh(void)
 
 myMesh::~myMesh(void)
 {
-	/**** TODO ****/
+	// Libérer la mémoire allouée
+	clear();
 }
 
 void myMesh::clear()
@@ -46,6 +47,97 @@ void myMesh::checkMesh()
 	if (it != halfedges.end())
 		cout << "Error! Not all edges have their twins!\n";
 	else cout << "Each edge has a twin!\n";
+}
+
+bool myMesh::verifyHalfEdgeStructure()
+{
+	bool isCorrect = true;
+	int erreurs = 0;
+
+	cout << "DEBUT DE LA VERIFICATION" << endl;
+
+	// Vérification des demi-arêtes
+	for (unsigned int i = 0; i < halfedges.size(); i++) {
+		myHalfedge* h = halfedges[i];
+		if (h == NULL) continue;
+
+		// Vérification des pointeurs nuls
+		if (h->source == NULL) { cout << "Erreur " << i << " : Pas de 'source' (sommet)" << endl; isCorrect = false; erreurs++; }
+		if (h->adjacent_face == NULL) { cout << "Erreur " << i << " : Pas de 'adjacent_face'" << endl; isCorrect = false; erreurs++; }
+		if (h->next == NULL) { cout << "Erreur " << i << " : Pas de 'next'" << endl; isCorrect = false; erreurs++; }
+		if (h->prev == NULL) { cout << "Erreur " << i << " : Pas de 'prev'" << endl; isCorrect = false; erreurs++; }
+		if (h->twin == NULL) { cout << "Erreur " << i << " : Pas de 'twin'" << endl; isCorrect = false; erreurs++; }
+
+		// Vérification réciprocité
+		if (h->twin != NULL && h->twin->twin != h) {
+			cout << "Erreur " << i << " : Le twin de mon twin n'est pas moi-même " << endl; isCorrect = false; erreurs++;
+		}
+		if (h->next != NULL && h->next->prev != h) {
+			cout << "Erreur " << i << " : Le prev de mon next n'est pas moi-même " << endl; isCorrect = false; erreurs++;
+		}
+		if (h->prev != NULL && h->prev->next != h) {
+			cout << "Erreur " << i << " : Le next de mon prev n'est pas moi-même " << endl; isCorrect = false; erreurs++;
+		}
+	}
+
+	// Vérification des sommets
+	for (unsigned int i = 0; i < vertices.size(); i++) {
+		myVertex* v = vertices[i];
+		if (v == NULL) continue;
+
+		// vérifier seulement que si originof existe, il pointe vers le bon vertex
+		// originof == NULL est acceptable pour les maillages avec bords ou sommets inutilisés
+		if (v->originof != NULL && v->originof->source != v) {
+			cout << "Erreur [Sommet " << i << "] : Son 'originof' a une source qui est un autre sommet" << endl; 
+			isCorrect = false; 
+			erreurs++;
+		}
+	}
+
+	// Vérification des faces
+	for (unsigned int i = 0; i < faces.size(); i++) {
+		myFace* f = faces[i];
+		if (f == NULL) continue;
+
+		if (f->adjacent_halfedge == NULL) {
+			cout << "Erreur [Face " << i << "] : Ne pointe vers aucune demi-arete (adjacent_halfedge est NULL)" << endl; isCorrect = false; erreurs++;
+		}
+		else {
+			if (f->adjacent_halfedge->adjacent_face != f) {
+				cout << "Erreur [Face " << i << "] : Son 'adjacent_halfedge' pointe vers une autre face " << endl; isCorrect = false; erreurs++;
+			}
+
+			// Parcourir le contour de la face pour voir s'il est bien fermé
+			myHalfedge* curr = f->adjacent_halfedge;
+			int countAretes = 0;
+			do {
+				if (curr->adjacent_face != f) {
+					cout << "Erreur [Face " << i << "] : Une demi-arete du contour ne pointe pas vers cette face" << endl; isCorrect = false; erreurs++;
+				}
+				curr = curr->next;
+				countAretes++;
+
+				// Sécurité anti-boucle infinie
+				if (countAretes > 1000) {
+					cout << "Erreur Fatale [Face " << i << "] : Boucle infinie detectee ! Le contour ne se referme jamais" << endl; isCorrect = false; erreurs++; break;
+				}
+			} while (curr != f->adjacent_halfedge && curr != NULL);
+
+			if (countAretes < 3) {
+				cout << "Erreur [Face " << i << "] : Face degeneree avec moins de 3 cotes (" << countAretes << " cotes)" << endl; isCorrect = false; erreurs++;
+			}
+		}
+	}
+
+	if (isCorrect) {
+		cout << "-> Validation REUSSIE" << endl;
+	}
+	else {
+		cout << "-> Validation ECHOUEE : " << erreurs << " erreurs trouvees" << endl;
+	}
+	cout << "FIN DE LA VERIFICATION" << endl << endl;
+
+	return isCorrect;
 }
 
 
@@ -239,6 +331,8 @@ void myMesh::triangulate()
 	// mise à jour finale des normales
 	computeNormals();
 	cout << "Maillage triangule avec succes." << endl;
+
+	this->verifyHalfEdgeStructure();
 }
 
 //return false if already triangle, true othewise.
@@ -484,7 +578,7 @@ bool myMesh::triangulate(myFace* f)
 		f->adjacent_halfedge = edges[0];
 	}
 
-
+	this->verifyHalfEdgeStructure();	
 	return true;
 }
 
@@ -554,7 +648,7 @@ bool myMesh::generateRevolutionMesh(const std::vector<std::pair<double, double> 
 		return false;
 	}
 
-	// crÃ©ation des sommets
+	// création des sommets
 	for (int i = 0; i < numPoints; ++i) {
 		double r = profile[i].first;
 		double z = profile[i].second;
@@ -600,5 +694,8 @@ bool myMesh::generateRevolutionMesh(const std::vector<std::pair<double, double> 
 	}
 
 	cout << "Surface de revolution generee avec succes !" << endl;
+
+	this->verifyHalfEdgeStructure();
+
 	return true;
 }

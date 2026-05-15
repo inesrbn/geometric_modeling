@@ -4,6 +4,7 @@
 #include "myVertex.h"
 #include <vector>
 #include <string>
+#include <utility>
 
 class myMesh
 {
@@ -14,6 +15,7 @@ public:
 	std::string name;
 
 	void checkMesh();
+	bool verifyHalfEdgeStructure();
 	bool readFile(std::string filename);
 	void computeNormals();
 	void normalize();
