@@ -176,6 +176,13 @@ void menu(int item)
 		break;
 	}
 
+	case MENU_SIMPLIFY:
+	{
+		m->simplifyShortestEdgeCollapse(10); // ou autre nombre
+		makeBuffers(m);
+		break;
+	}
+
 	case MENU_EXIT:
 		{
 			m->clear();

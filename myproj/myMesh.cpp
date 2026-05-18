@@ -699,3 +699,242 @@ bool myMesh::generateRevolutionMesh(const std::vector<std::pair<double, double> 
 
 	return true;
 }
+
+
+double myMesh::edgeLength(myHalfedge* h)
+{
+	if (h == NULL || h->twin == NULL) return 1e9;
+
+	myPoint3D* p1 = h->source->point;
+	myPoint3D* p2 = h->twin->source->point;
+
+	return p1->dist(*p2);
+}
+
+//fonction topologique
+bool myMesh::canCollapse(myHalfedge* h)
+{
+	if (h == NULL || h->twin == NULL) return false;
+
+	myVertex* v1 = h->source;
+	myVertex* v2 = h->twin->source;
+
+	if (v1 == NULL || v2 == NULL || v1 == v2) return false;
+
+	// Vérification rapide que les faces autour de l'arête sont bien des triangles
+	if (h->next == NULL || h->next->next == NULL || h->next->next->next != h) return false;
+	if (h->twin->next == NULL || h->twin->next->next == NULL || h->twin->next->next->next != h->twin) return false;
+
+	// Récupération des sommets opposés des deux triangles adjacents
+	myVertex* v3 = h->prev->source;
+	myVertex* v4 = h->twin->next->next->source;
+
+	if (v3 == v4) return false; 
+
+	
+	// On extrait l'intersection des voisins
+	std::vector<myVertex*> voisins_v1;
+	std::vector<myVertex*> voisins_v2;
+
+	// Collecter les sommets voisins de v1 en tournant autour
+	myHalfedge* curr = h;
+	do {
+		if (curr->twin != NULL) {
+			voisins_v1.push_back(curr->twin->source);
+			curr = curr->twin->next;
+		}
+		else {
+			break; // On a atteint un bord du maillage ouvert
+		}
+	} while (curr != h && curr != NULL);
+
+	// Collecter les sommets voisins de v2 en tournant autour
+	myHalfedge* curr2 = h->twin;
+	do {
+		if (curr2->twin != NULL) {
+			voisins_v2.push_back(curr2->twin->source);
+			curr2 = curr2->twin->next;
+		}
+		else {
+			break; // On a atteint un bord du maillage ouvert
+		}
+	} while (curr2 != h->twin && curr2 != NULL);
+
+	// Compter le nombre de sommets communs dans l'intersection
+	int sommets_communs = 0;
+	for (myVertex* nv1 : voisins_v1) {
+		for (myVertex* nv2 : voisins_v2) {
+			if (nv1 == nv2 && nv1 != NULL) {
+				sommets_communs++;
+			}
+		}
+	}
+
+	// Pour une arête interne standard, les seuls sommets communs autorisés sont v3 et v4 (donc exactement 2).
+	// Si le maillage possède plus de 2 sommets communs, faire le collapse va écraser des triangles non adjacents,
+	// ce qui provoque l'effondrement du maillage.
+	if (sommets_communs > 2) {
+		return false;
+	}
+
+	return true;
+}
+
+void myMesh::collapseEdge(myHalfedge* h)
+{
+	// Sécurité absolue avant d'effectuer toute modification structurelle
+	if (!canCollapse(h)) {
+		return;
+	}
+
+	myVertex* v1 = h->source;
+	myVertex* v2 = h->twin->source;
+
+	myFace* f1 = h->adjacent_face;
+	myFace* f2 = h->twin->adjacent_face;
+
+	myHalfedge* h_next = h->next;
+	myHalfedge* h_prev = h->prev;
+	myHalfedge* t_next = h->twin->next;
+	myHalfedge* t_prev = h->twin->prev;
+
+	myVertex* v3 = h_prev->source;
+	myVertex* v4 = t_prev->source;
+
+	myHalfedge* e1 = h_next->twin;
+	myHalfedge* e2 = h_prev->twin;
+	myHalfedge* e3 = t_next->twin;
+	myHalfedge* e4 = t_prev->twin;
+
+	// Calculer la position médiane et déplacer le sommet survivant (v1)
+	v1->point->X = 0.5 * (v1->point->X + v2->point->X);
+	v1->point->Y = 0.5 * (v1->point->Y + v2->point->Y);
+	v1->point->Z = 0.5 * (v1->point->Z + v2->point->Z);
+
+	// Toutes les arêtes partant du sommet v2 partent maintenant de v1
+	for (unsigned int i = 0; i < halfedges.size(); i++)
+	{
+		if (halfedges[i] != NULL && halfedges[i]->source == v2) {
+			halfedges[i]->source = v1;
+		}
+	}
+
+	// protection des cas de bords
+	if (e1 != NULL) e1->twin = e2;
+	if (e2 != NULL) e2->twin = e1;
+
+	if (e3 != NULL) e3->twin = e4;
+	if (e4 != NULL) e4->twin = e3;
+
+	v1->originof = NULL;
+	if (v3 != NULL) v3->originof = NULL;
+	if (v4 != NULL) v4->originof = NULL;
+
+	for (myHalfedge* he : halfedges) {
+		if (he != h && he != h->twin && he != h_next && he != h_prev && he != t_next && he != t_prev && he != NULL) {
+			if (he->source == v1 && v1->originof == NULL) v1->originof = he;
+			if (v3 != NULL && he->source == v3 && v3->originof == NULL) v3->originof = he;
+			if (v4 != NULL && he->source == v4 && v4->originof == NULL) v4->originof = he;
+		}
+	}
+
+	// Nettoyage de la mémoire via des fonctions lambdas utilitaires
+	auto removeEdge = [&](myHalfedge* edge) {
+		if (!edge) return;
+		for (auto it = halfedges.begin(); it != halfedges.end(); ++it) {
+			if (*it == edge) { halfedges.erase(it); break; }
+		}
+		delete edge;
+		};
+	auto removeFace = [&](myFace* face) {
+		if (!face) return;
+		for (auto it = faces.begin(); it != faces.end(); ++it) {
+			if (*it == face) { faces.erase(it); break; }
+		}
+		delete face;
+		};
+	auto removeVertex = [&](myVertex* vertex) {
+		if (!vertex) return;
+		for (auto it = vertices.begin(); it != vertices.end(); ++it) {
+			if (*it == vertex) { vertices.erase(it); break; }
+		}
+		delete vertex;
+		};
+
+	// Suppression faces, arêtes supprimées et du sommet v2
+	removeFace(f1);
+	removeFace(f2);
+
+	removeEdge(h_next);
+	removeEdge(h_prev);
+	removeEdge(t_next);
+	removeEdge(t_prev);
+	removeEdge(h->twin);
+	removeEdge(h);
+
+	removeVertex(v2);
+}
+
+//boucle de simplification du maillage
+void myMesh::simplifyShortestEdgeCollapse(int iterations)
+{
+	// Historique des arêtes refusées ou impossibles à effondrer
+	std::vector<myHalfedge*> ignored_edges;
+
+	for (int i = 0; i < iterations; i++)
+	{
+		double minLen = 1e9;
+		myHalfedge* best = NULL;
+
+		// Recherche de l'arête la plus courte strictement valide topologiquement
+		for (unsigned int j = 0; j < halfedges.size(); j++)
+		{
+			myHalfedge* h = halfedges[j];
+
+			if (h == NULL || h->twin == NULL)
+				continue;
+
+			// Ignorer si cette arête a été mise sur liste noire
+			bool ignore = false;
+			for (auto ig : ignored_edges) {
+				if (ig == h || ig == h->twin) { ignore = true; break; }
+			}
+			if (ignore) continue;
+
+			// On écarte immédiatement l'arête si elle brise le maillage
+			if (!canCollapse(h)) {
+				continue;
+			}
+
+			double len = edgeLength(h);
+			if (len < minLen)
+			{
+				minLen = len;
+				best = h;
+			}
+		}
+
+		// Si le filtre a tout bloqué, on arrête
+		if (best == NULL) {
+			cout << "Plus aucune arete simplifiable topologiquement valide trouvee ! Arret de la boucle." << endl;
+			break;
+		}
+
+		int old_edge_count = halfedges.size();
+
+		collapseEdge(best);
+
+		int new_edge_count = halfedges.size();
+
+		// Si l'effacement a échoué, on place l'arête sur liste noire
+		if (old_edge_count == new_edge_count) {
+			ignored_edges.push_back(best);
+			i--; // Ne compte pas comme une itération valide
+		}
+	}
+
+	// Recalcul des normales et vérification finale de la structure
+	computeNormals();
+	cout << "Simplification (edge collapse) terminee avec succes." << endl;
+	verifyHalfEdgeStructure();
+}

@@ -36,5 +36,10 @@ public:
 	~myMesh(void);
 
 	bool generateRevolutionMesh(const std::vector<std::pair<double, double> >& profile, int slices);
+
+	double edgeLength(myHalfedge* h);
+	void collapseEdge(myHalfedge* h);
+	void simplifyShortestEdgeCollapse(int iterations);
+	bool canCollapse(myHalfedge* h);
 };
 
