@@ -1,4 +1,4 @@
-#include "myMesh.h"
+ï»¿#include "myMesh.h"
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -21,7 +21,7 @@ myMesh::myMesh(void)
 
 myMesh::~myMesh(void)
 {
-	// Libérer la mémoire allouée
+	// LibÃ©rer la mÃ©moire allouÃ©e
 	clear();
 }
 
@@ -56,37 +56,37 @@ bool myMesh::verifyHalfEdgeStructure()
 
 	cout << "DEBUT DE LA VERIFICATION" << endl;
 
-	// Vérification des demi-arêtes
+	// VÃ©rification des demi-arÃªtes
 	for (unsigned int i = 0; i < halfedges.size(); i++) {
 		myHalfedge* h = halfedges[i];
 		if (h == NULL) continue;
 
-		// Vérification des pointeurs nuls
+		// VÃ©rification des pointeurs nuls
 		if (h->source == NULL) { cout << "Erreur " << i << " : Pas de 'source' (sommet)" << endl; isCorrect = false; erreurs++; }
 		if (h->adjacent_face == NULL) { cout << "Erreur " << i << " : Pas de 'adjacent_face'" << endl; isCorrect = false; erreurs++; }
 		if (h->next == NULL) { cout << "Erreur " << i << " : Pas de 'next'" << endl; isCorrect = false; erreurs++; }
 		if (h->prev == NULL) { cout << "Erreur " << i << " : Pas de 'prev'" << endl; isCorrect = false; erreurs++; }
 		if (h->twin == NULL) { cout << "Erreur " << i << " : Pas de 'twin'" << endl; isCorrect = false; erreurs++; }
 
-		// Vérification réciprocité
+		// VÃ©rification rÃ©ciprocitÃ©
 		if (h->twin != NULL && h->twin->twin != h) {
-			cout << "Erreur " << i << " : Le twin de mon twin n'est pas moi-même " << endl; isCorrect = false; erreurs++;
+			cout << "Erreur " << i << " : Le twin de mon twin n'est pas moi-mÃªme " << endl; isCorrect = false; erreurs++;
 		}
 		if (h->next != NULL && h->next->prev != h) {
-			cout << "Erreur " << i << " : Le prev de mon next n'est pas moi-même " << endl; isCorrect = false; erreurs++;
+			cout << "Erreur " << i << " : Le prev de mon next n'est pas moi-mÃªme " << endl; isCorrect = false; erreurs++;
 		}
 		if (h->prev != NULL && h->prev->next != h) {
-			cout << "Erreur " << i << " : Le next de mon prev n'est pas moi-même " << endl; isCorrect = false; erreurs++;
+			cout << "Erreur " << i << " : Le next de mon prev n'est pas moi-mÃªme " << endl; isCorrect = false; erreurs++;
 		}
 	}
 
-	// Vérification des sommets
+	// VÃ©rification des sommets
 	for (unsigned int i = 0; i < vertices.size(); i++) {
 		myVertex* v = vertices[i];
 		if (v == NULL) continue;
 
-		// vérifier seulement que si originof existe, il pointe vers le bon vertex
-		// originof == NULL est acceptable pour les maillages avec bords ou sommets inutilisés
+		// vÃ©rifier seulement que si originof existe, il pointe vers le bon vertex
+		// originof == NULL est acceptable pour les maillages avec bords ou sommets inutilisÃ©s
 		if (v->originof != NULL && v->originof->source != v) {
 			cout << "Erreur [Sommet " << i << "] : Son 'originof' a une source qui est un autre sommet" << endl; 
 			isCorrect = false; 
@@ -94,7 +94,7 @@ bool myMesh::verifyHalfEdgeStructure()
 		}
 	}
 
-	// Vérification des faces
+	// VÃ©rification des faces
 	for (unsigned int i = 0; i < faces.size(); i++) {
 		myFace* f = faces[i];
 		if (f == NULL) continue;
@@ -107,7 +107,7 @@ bool myMesh::verifyHalfEdgeStructure()
 				cout << "Erreur [Face " << i << "] : Son 'adjacent_halfedge' pointe vers une autre face " << endl; isCorrect = false; erreurs++;
 			}
 
-			// Parcourir le contour de la face pour voir s'il est bien fermé
+			// Parcourir le contour de la face pour voir s'il est bien fermÃ©
 			myHalfedge* curr = f->adjacent_halfedge;
 			int countAretes = 0;
 			do {
@@ -117,7 +117,7 @@ bool myMesh::verifyHalfEdgeStructure()
 				curr = curr->next;
 				countAretes++;
 
-				// Sécurité anti-boucle infinie
+				// SÃ©curitÃ© anti-boucle infinie
 				if (countAretes > 1000) {
 					cout << "Erreur Fatale [Face " << i << "] : Boucle infinie detectee ! Le contour ne se referme jamais" << endl; isCorrect = false; erreurs++; break;
 				}
@@ -167,7 +167,7 @@ bool myMesh::readFile(std::string filename)
 			float x, y, z;
 			myline >> x >> y >> z;
 
-			// Instanciation du sommet et de ses coordonnées
+			// Instanciation du sommet et de ses coordonnÃ©es
 			myVertex* v = new myVertex();
 			v->point = new myPoint3D(x, y, z);
 			vertices.push_back(v);
@@ -179,21 +179,21 @@ bool myMesh::readFile(std::string filename)
 		{
 			faceids.clear();
 			while (myline >> u) {
-				// Lit les indices des sommets de la face (les indices OBJ commencent à 1, donc on fait -1)
+				// Lit les indices des sommets de la face (les indices OBJ commencent Ã  1, donc on fait -1)
 				faceids.push_back(atoi((u.substr(0, u.find("/"))).c_str()) - 1);
 			}
 			if (faceids.size() < 3) {
-				// Ignore les faces dégénérées
+				// Ignore les faces dÃ©gÃ©nÃ©rÃ©es
 				continue;
 			}
 
 			// Alloue le tableau pour stocker les pointeurs vers les half-edges
 			hedges = new myHalfedge * [faceids.size()];
 			for (unsigned int i = 0; i < faceids.size(); i++) {
-				hedges[i] = new myHalfedge(); // Pré-alloue les nouveaux half-edges
+				hedges[i] = new myHalfedge(); // PrÃ©-alloue les nouveaux half-edges
 			}
 
-			// Alloue la nouvelle face et la connecte à sa première demi-arête
+			// Alloue la nouvelle face et la connecte Ã  sa premiÃ¨re demi-arÃªte
 			myFace* f = new myFace();
 			f->adjacent_halfedge = hedges[0];
 
@@ -202,38 +202,38 @@ bool myMesh::readFile(std::string filename)
 				int iplusone = (i + 1) % faceids.size();
 				int iminusone = (i - 1 + faceids.size()) % faceids.size();
 
-				// Connexion de la demi-arête avec la face, les sommets et les arêtes voisines
+				// Connexion de la demi-arÃªte avec la face, les sommets et les arÃªtes voisines
 				hedges[i]->next = hedges[iplusone];
 				hedges[i]->prev = hedges[iminusone];
 				hedges[i]->adjacent_face = f;
 				hedges[i]->source = vertices[faceids[i]];
 
-				// Si le sommet n'a pas encore de demi-arête d'origine, on lui assigne celle-ci
+				// Si le sommet n'a pas encore de demi-arÃªte d'origine, on lui assigne celle-ci
 				if (vertices[faceids[i]]->originof == NULL) {
 					vertices[faceids[i]]->originof = hedges[i];
 				}
 
-				// Recherche des arêtes jumelles (twins) via la map
+				// Recherche des arÃªtes jumelles (twins) via la map
 				pair<int, int> current_edge = make_pair(faceids[i], faceids[iplusone]);
 				pair<int, int> twin_edge = make_pair(faceids[iplusone], faceids[i]);
 
 				it = twin_map.find(twin_edge);
 				if (it != twin_map.end()) {
-					// Une arête jumelle a été trouvée, on les connecte mutuellement
+					// Une arÃªte jumelle a Ã©tÃ© trouvÃ©e, on les connecte mutuellement
 					hedges[i]->twin = it->second;
 					it->second->twin = hedges[i];
 				}
 				else {
-					// Pas encore de jumelle, on ajoute la demi-arête actuelle à la map
+					// Pas encore de jumelle, on ajoute la demi-arÃªte actuelle Ã  la map
 					twin_map[current_edge] = hedges[i];
 				}
 
-				// Ajoute la demi-arête à la liste globale du maillage
+				// Ajoute la demi-arÃªte Ã  la liste globale du maillage
 				halfedges.push_back(hedges[i]);
 			}
-			delete[] hedges; // Libère le tableau de pointeurs temporaire
+			delete[] hedges; // LibÃ¨re le tableau de pointeurs temporaire
 
-			// Ajoute la face à la liste globale du maillage
+			// Ajoute la face Ã  la liste globale du maillage
 			faces.push_back(f);
 		}
 	}
@@ -247,13 +247,13 @@ bool myMesh::readFile(std::string filename)
 
 void myMesh::computeNormals()
 {
-	// Étape A : Calculer la normale de chaque face
+	// Ã‰tape A : Calculer la normale de chaque face
 	for (unsigned int i = 0; i < faces.size(); i++) {
 		if (faces[i]) faces[i]->computeNormal();
 	}
 
-	// Étape B : Calculer la normale de chaque sommet 
-	// (Dépend de l'étape A car utilise faces[i]->normal)
+	// Ã‰tape B : Calculer la normale de chaque sommet 
+	// (DÃ©pend de l'Ã©tape A car utilise faces[i]->normal)
 	for (unsigned int i = 0; i < vertices.size(); i++) {
 		if (vertices[i]) vertices[i]->computeNormal();
 	}
@@ -312,23 +312,301 @@ void myMesh::splitFaceQUADS(myFace* f, myPoint3D* p)
 }
 
 
+void lierDemiArete(myHalfedge* h, myVertex* a, myVertex* b, std::map<std::pair<myVertex*, myVertex*>, myHalfedge*>& edgeMap) {
+	std::pair<myVertex*, myVertex*> twinKey = std::make_pair(b, a);
+	std::map<std::pair<myVertex*, myVertex*>, myHalfedge*>::iterator it = edgeMap.find(twinKey);
+
+	if (it != edgeMap.end()) {
+		h->twin = it->second;
+		it->second->twin = h;
+	}
+	else {
+		edgeMap[std::make_pair(a, b)] = h;
+	}
+}
+
+void creerTriangle(myMesh* m, myVertex* v1, myVertex* v2, myVertex* v3, std::map<std::pair<myVertex*, myVertex*>, myHalfedge*>& edgeMap) {
+	// ignorer triangles degeneres
+	if (v1 == NULL || v2 == NULL || v3 == NULL) return;
+	if (v1 == v2 || v2 == v3 || v3 == v1) return;
+
+	// allouer face et demi-aretes
+	myFace* f = new myFace();
+	myHalfedge* h1 = new myHalfedge();
+	myHalfedge* h2 = new myHalfedge();
+	myHalfedge* h3 = new myHalfedge();
+
+	m->faces.push_back(f);
+	m->halfedges.push_back(h1);
+	m->halfedges.push_back(h2);
+	m->halfedges.push_back(h3);
+
+	// assigner sources
+	h1->source = v1; h2->source = v2; h3->source = v3;
+
+	// originof: ne pas ecraser s'il existe deja
+	if (v1->originof == NULL) v1->originof = h1;
+	if (v2->originof == NULL) v2->originof = h2;
+	if (v3->originof == NULL) v3->originof = h3;
+
+	// chainage
+	h1->next = h2; h2->next = h3; h3->next = h1;
+	h1->prev = h3; h2->prev = h1; h3->prev = h2;
+
+	// liaisons face et demi-aretes
+	h1->adjacent_face = f; h2->adjacent_face = f; h3->adjacent_face = f;
+	f->adjacent_halfedge = h1;
+
+	// liaison des twins
+	lierDemiArete(h1, v1, v2, edgeMap);
+	lierDemiArete(h2, v2, v3, edgeMap);
+	lierDemiArete(h3, v3, v1, edgeMap);
+}
+
 void myMesh::subdivisionCatmullClark()
 {
-	/**** TODO ****/
+	// On sauvegarde l'Ã©tat initial pour ne pas boucler sur les nouveaux Ã©lÃ©ments
+	vector<myFace*> oldFaces = faces;
+	vector<myVertex*> oldVertices = vertices;
+	vector<myHalfedge*> oldHalfedges = halfedges;
+
+	std::map<myFace*, myVertex*> facePoint;
+	std::map<std::pair<myVertex*, myVertex*>, myVertex*> edgePoint;
+	std::map<myVertex*, myVertex*> vertexMap; // Associe l'ancien sommet au nouveau
+
+	auto edgeKey = [](myVertex* a, myVertex* b) {
+		return (a < b) ? std::make_pair(a, b) : std::make_pair(b, a);
+		};
+
+	//face points
+	for (myFace* f : oldFaces)
+	{
+		if (!f || !f->adjacent_halfedge) continue;
+
+		double sx = 0, sy = 0, sz = 0;
+		int count = 0;
+
+		myHalfedge* h = f->adjacent_halfedge;
+		do {
+			if (!h || !h->source) break;
+			sx += h->source->point->X;
+			sy += h->source->point->Y;
+			sz += h->source->point->Z;
+			count++;
+			h = h->next;
+		} while (h && h != f->adjacent_halfedge);
+
+		if (count == 0) continue;
+
+		myVertex* fp = new myVertex();
+		fp->point = new myPoint3D(sx / count, sy / count, sz / count);
+		facePoint[f] = fp;
+	}
+
+	//edge points
+	for (myHalfedge* h : oldHalfedges)
+	{
+		if (!h || !h->source || !h->twin || !h->adjacent_face || !h->twin->adjacent_face)
+			continue;
+
+		auto a = h->source;
+		auto b = h->twin->source;
+		auto key = edgeKey(a, b);
+
+		if (edgePoint.find(key) != edgePoint.end()) continue;
+
+		myVertex* v = new myVertex();
+		myPoint3D* p1 = a->point;
+		myPoint3D* p2 = b->point;
+		myPoint3D* f1 = facePoint[h->adjacent_face]->point;
+		myPoint3D* f2 = facePoint[h->twin->adjacent_face]->point;
+
+		v->point = new myPoint3D(
+			(p1->X + p2->X + f1->X + f2->X) * 0.25,
+			(p1->Y + p2->Y + f1->Y + f2->Y) * 0.25,
+			(p1->Z + p2->Z + f1->Z + f2->Z) * 0.25
+		);
+		edgePoint[key] = v;
+	}
+
+	//vertex points
+	for (myVertex* v : oldVertices)
+	{
+		if (!v) continue;
+
+		myVertex* nv = new myVertex();
+		vertexMap[v] = nv; 
+
+		if (!v->originof) { // SÃ©curitÃ© pour les sommets dÃ©connectÃ©s
+			nv->point = new myPoint3D(v->point->X, v->point->Y, v->point->Z);
+			continue;
+		}
+
+		double Fx = 0, Fy = 0, Fz = 0;
+		double Rx = 0, Ry = 0, Rz = 0;
+		int n = 0;
+
+		myHalfedge* start = v->originof;
+		myHalfedge* h = start;
+		bool valid = true;
+
+		do {
+			if (!h || !h->twin || !h->adjacent_face) { valid = false; break; }
+
+			Fx += facePoint[h->adjacent_face]->point->X;
+			Fy += facePoint[h->adjacent_face]->point->Y;
+			Fz += facePoint[h->adjacent_face]->point->Z;
+
+			myVertex* v2 = h->twin->source;
+			Rx += v2->point->X; Ry += v2->point->Y; Rz += v2->point->Z;
+
+			n++;
+			h = h->twin->next;
+
+		} while (h && h != start);
+
+		if (n > 0 && valid) {
+			Fx /= n; Fy /= n; Fz /= n;
+			Rx /= n; Ry /= n; Rz /= n;
+
+			double Px = v->point->X;
+			double Py = v->point->Y;
+			double Pz = v->point->Z;
+
+			nv->point = new myPoint3D(
+				(Fx + 2.0 * Rx + (n - 3.0) * Px) / n,
+				(Fy + 2.0 * Ry + (n - 3.0) * Py) / n,
+				(Fz + 2.0 * Rz + (n - 3.0) * Pz) / n
+			);
+		}
+		else {
+			nv->point = new myPoint3D(v->point->X, v->point->Y, v->point->Z);
+		}
+	}
+
+	//reconnexion par quadrilateres
+	vector<myFace*> newFaces;
+	vector<myHalfedge*> newHalfedges;
+
+	for (myFace* f : oldFaces)
+	{
+		if (!f || !f->adjacent_halfedge) continue;
+
+		myHalfedge* start = f->adjacent_halfedge;
+		myHalfedge* h = start;
+
+		myVertex* nvFace = facePoint[f];
+		map<myVertex*, myHalfedge*> internalOut;
+		map<myVertex*, myHalfedge*> internalIn;
+
+		vector<myHalfedge*> faceLoop;
+		do {
+			faceLoop.push_back(h);
+			h = h->next;
+		} while (h && h != start);
+
+		for (myHalfedge* currH : faceLoop)
+		{
+			myVertex* vOrig = currH->source;
+			myVertex* nvOrig = vertexMap[vOrig];
+
+			// RÃ©cupÃ©ration sÃ©curisÃ©e des Edge Points via la clÃ© (A, B)
+			auto keyCurr = edgeKey(currH->source, currH->next->source);
+			auto keyPrev = edgeKey(currH->prev->source, currH->source);
+
+			myVertex* nvEdgeCurr = edgePoint[keyCurr];
+			myVertex* nvEdgePrev = edgePoint[keyPrev];
+
+			if (!nvEdgeCurr || !nvEdgePrev) continue;
+
+			myFace* nf = new myFace();
+			newFaces.push_back(nf);
+
+			myHalfedge* e1 = new myHalfedge();
+			myHalfedge* e2 = new myHalfedge();
+			myHalfedge* e3 = new myHalfedge();
+			myHalfedge* e4 = new myHalfedge();
+
+			newHalfedges.push_back(e1); newHalfedges.push_back(e2);
+			newHalfedges.push_back(e3); newHalfedges.push_back(e4);
+
+			e1->source = nvOrig; e2->source = nvEdgeCurr;
+			e3->source = nvFace; e4->source = nvEdgePrev;
+
+			e1->adjacent_face = nf; e2->adjacent_face = nf;
+			e3->adjacent_face = nf; e4->adjacent_face = nf;
+			nf->adjacent_halfedge = e1;
+
+			e1->next = e2; e2->prev = e1;
+			e2->next = e3; e3->prev = e2;
+			e3->next = e4; e4->prev = e3;
+			e4->next = e1; e1->prev = e4;
+
+			nvOrig->originof = e1;
+			nvEdgeCurr->originof = e2;
+			nvFace->originof = e3;
+			nvEdgePrev->originof = e4;
+
+			internalOut[nvEdgePrev] = e3;
+			internalIn[nvEdgeCurr] = e2;
+		}
+
+		for (auto& pair : internalOut) {
+			myVertex* ev = pair.first;
+			myHalfedge* eOut = pair.second;
+			myHalfedge* eIn = internalIn[ev];
+			if (eIn) { eOut->twin = eIn; eIn->twin = eOut; }
+		}
+	}
+
+	// Liaison globale de tous les Twins (Jumeaux)
+	map<pair<myVertex*, myVertex*>, myHalfedge*> halfedgeMap;
+	for (myHalfedge* nh : newHalfedges) {
+		myVertex* src = nh->source;
+		myVertex* dst = nh->next->source;
+		halfedgeMap[{src, dst}] = nh;
+	}
+
+	for (myHalfedge* nh : newHalfedges) {
+		myVertex* src = nh->source;
+		myVertex* dst = nh->next->source;
+		if (halfedgeMap.find({ dst, src }) != halfedgeMap.end()) {
+			nh->twin = halfedgeMap[{dst, src}];
+		}
+	}
+
+	//remplacement du maillage
+	vertices.clear();
+	// On ajoute tous les nouveaux sommets dans la liste officielle
+	for (auto const& pair : vertexMap) vertices.push_back(pair.second);
+	for (auto const& pair : edgePoint) vertices.push_back(pair.second);
+	for (auto const& pair : facePoint) vertices.push_back(pair.second);
+
+	faces = newFaces;
+	halfedges = newHalfedges;
+
+	// on dÃ©truit l'ancien maillage
+	for (myFace* f : oldFaces) if (f) delete f;
+	for (myVertex* v : oldVertices) if (v) delete v;
+	for (myHalfedge* h : oldHalfedges) if (h) delete h;
+
+	computeNormals();
+	cout << "Catmull-Clark subdivision terminee (SAFE VERSION)." << endl;
+	verifyHalfEdgeStructure();
 }
 
 
 void myMesh::triangulate()
 {
-	// on copie la liste actuelle pour ne pas boucler à l'infini sur les nouveaux triangles
+	// on copie la liste actuelle pour ne pas boucler Ã  l'infini sur les nouveaux triangles
 	vector<myFace*> original_faces = faces;
 
 	for (unsigned int i = 0; i < original_faces.size(); i++) {
-		// la fonction triangulate(f) s'occupe de la découpe en éventail
+		// la fonction triangulate(f) s'occupe de la dÃ©coupe en Ã©ventail
 		triangulate(original_faces[i]);
 	}
 
-	// mise à jour finale des normales
+	// mise Ã  jour finale des normales
 	computeNormals();
 	cout << "Maillage triangule avec succes." << endl;
 
@@ -338,10 +616,10 @@ void myMesh::triangulate()
 //return false if already triangle, true othewise.
 //bool myMesh::triangulate(myFace* f)
 //{
-//	// vérifier que la face et sa demi-arête existent
+//	// vÃ©rifier que la face et sa demi-arÃªte existent
 //	if (f == NULL || f->adjacent_halfedge == NULL) return false;
 //
-//	// récupérer toutes les demi-arêtes originales de la face dans l'ordre
+//	// rÃ©cupÃ©rer toutes les demi-arÃªtes originales de la face dans l'ordre
 //	vector<myHalfedge*> face_edges;
 //	myHalfedge* curr = f->adjacent_halfedge;
 //	do {
@@ -350,11 +628,11 @@ void myMesh::triangulate()
 //	} while (curr != f->adjacent_halfedge && curr != NULL); // anti-boucle infinie
 //
 //	int n = face_edges.size();
-//	if (n <= 3) return false; // si déjà un triangle -> false
+//	if (n <= 3) return false; // si dÃ©jÃ  un triangle -> false
 //
-//	// préparer les faces
-//	// un polygone à N sommets donne (N - 2) triangles.
-//	// le premier triangle réutilise la face 'f', on crée les autres.
+//	// prÃ©parer les faces
+//	// un polygone Ã  N sommets donne (N - 2) triangles.
+//	// le premier triangle rÃ©utilise la face 'f', on crÃ©e les autres.
 //	vector<myFace*> tri_faces;
 //	tri_faces.push_back(f);
 //	for (int i = 0; i < n - 3; i++) {
@@ -363,8 +641,8 @@ void myMesh::triangulate()
 //		tri_faces.push_back(newF);
 //	}
 //
-//	// préparer les diagonales
-//	// il nous faut (N - 3) paires de demi-arêtes internes pour couper le polygone.
+//	// prÃ©parer les diagonales
+//	// il nous faut (N - 3) paires de demi-arÃªtes internes pour couper le polygone.
 //	vector<myHalfedge*> diag_out(n - 3); // diagonales qui partent du sommet 0
 //	vector<myHalfedge*> diag_in(n - 3);  // diagonales qui reviennent vers le sommet 0
 //
@@ -389,38 +667,38 @@ void myMesh::triangulate()
 //	for (int i = 0; i < n - 2; i++) {
 //		myFace* current_face = tri_faces[i];
 //
-//		// chaque triangle est formé de 3 arêtes : eA, eB, eC
-//		myHalfedge* eA; // arête sortant du sommet 0
-//		myHalfedge* eB = face_edges[i + 1]; // l'arête originale du bord du polygone
-//		myHalfedge* eC; // arête retournant vers le sommet 0
+//		// chaque triangle est formÃ© de 3 arÃªtes : eA, eB, eC
+//		myHalfedge* eA; // arÃªte sortant du sommet 0
+//		myHalfedge* eB = face_edges[i + 1]; // l'arÃªte originale du bord du polygone
+//		myHalfedge* eC; // arÃªte retournant vers le sommet 0
 //
-//		// déterminer eA
+//		// dÃ©terminer eA
 //		if (i == 0) {
-//			eA = face_edges[0]; // pour le 1er triangle, c'est la 1ère arête originale
+//			eA = face_edges[0]; // pour le 1er triangle, c'est la 1Ã¨re arÃªte originale
 //		}
 //		else {
 //			eA = diag_out[i - 1]; // pour les autres, c'est la diagonale sortante
 //		}
 //
-//		// déterminer eC
+//		// dÃ©terminer eC
 //		if (i == n - 3) {
-//			eC = face_edges[n - 1]; // pour le dernier triangle, c'est la dernière arête originale
+//			eC = face_edges[n - 1]; // pour le dernier triangle, c'est la derniÃ¨re arÃªte originale
 //		}
 //		else {
 //			eC = diag_in[i]; // pour les autres, c'est la diagonale entrante
 //		}
 //
-//		// chaînage
+//		// chaÃ®nage
 //		eA->next = eB; eB->prev = eA;
 //		eB->next = eC; eC->prev = eB;
 //		eC->next = eA; eA->prev = eC;
 //
-//		// assigner la face courante aux 3 demi-arêtes
+//		// assigner la face courante aux 3 demi-arÃªtes
 //		eA->adjacent_face = current_face;
 //		eB->adjacent_face = current_face;
 //		eC->adjacent_face = current_face;
 //
-//		// assigner une arête de référence à la face
+//		// assigner une arÃªte de rÃ©fÃ©rence Ã  la face
 //		current_face->adjacent_halfedge = eA;
 //	}
 //
@@ -444,7 +722,7 @@ bool myMesh::triangulate(myFace* f)
 	if (edges.size() <= 3) return false;
 
 
-	// Calcul de la normale du polygone (Méthode de Newell)
+	// Calcul de la normale du polygone (MÃ©thode de Newell)
 	myVector3D normal(0, 0, 0);
 	for (size_t i = 0; i < edges.size(); i++) {
 		myPoint3D* p1 = edges[i]->source->point;
@@ -582,61 +860,6 @@ bool myMesh::triangulate(myFace* f)
 	return true;
 }
 
-
-
-
-void lierDemiArete(myHalfedge* h, myVertex* a, myVertex* b, std::map<std::pair<myVertex*, myVertex*>, myHalfedge*>& edgeMap) {
-	std::pair<myVertex*, myVertex*> twinKey = std::make_pair(b, a);
-	std::map<std::pair<myVertex*, myVertex*>, myHalfedge*>::iterator it = edgeMap.find(twinKey);
-
-	if (it != edgeMap.end()) {
-		h->twin = it->second;
-		it->second->twin = h;
-	}
-	else {
-		edgeMap[std::make_pair(a, b)] = h;
-	}
-}
-
-void creerTriangle(myMesh* m, myVertex* v1, myVertex* v2, myVertex* v3, std::map<std::pair<myVertex*, myVertex*>, myHalfedge*>& edgeMap) {
-	// ignorer triangles degeneres
-	if (v1 == NULL || v2 == NULL || v3 == NULL) return;
-	if (v1 == v2 || v2 == v3 || v3 == v1) return;
-
-	// allouer face et demi-aretes
-	myFace* f = new myFace();
-	myHalfedge* h1 = new myHalfedge();
-	myHalfedge* h2 = new myHalfedge();
-	myHalfedge* h3 = new myHalfedge();
-
-	m->faces.push_back(f);
-	m->halfedges.push_back(h1);
-	m->halfedges.push_back(h2);
-	m->halfedges.push_back(h3);
-
-	// assigner sources
-	h1->source = v1; h2->source = v2; h3->source = v3;
-
-	// originof: ne pas ecraser s'il existe deja
-	if (v1->originof == NULL) v1->originof = h1;
-	if (v2->originof == NULL) v2->originof = h2;
-	if (v3->originof == NULL) v3->originof = h3;
-
-	// chainage
-	h1->next = h2; h2->next = h3; h3->next = h1;
-	h1->prev = h3; h2->prev = h1; h3->prev = h2;
-
-	// liaisons face et demi-aretes
-	h1->adjacent_face = f; h2->adjacent_face = f; h3->adjacent_face = f;
-	f->adjacent_halfedge = h1;
-
-	// liaison des twins
-	lierDemiArete(h1, v1, v2, edgeMap);
-	lierDemiArete(h2, v2, v3, edgeMap);
-	lierDemiArete(h3, v3, v1, edgeMap);
-}
-
-
 //surface of revolution
 bool myMesh::generateRevolutionMesh(const std::vector<std::pair<double, double> >& profile, int slices) {
 	
@@ -648,7 +871,7 @@ bool myMesh::generateRevolutionMesh(const std::vector<std::pair<double, double> 
 		return false;
 	}
 
-	// création des sommets
+	// crÃ©ation des sommets
 	for (int i = 0; i < numPoints; ++i) {
 		double r = profile[i].first;
 		double z = profile[i].second;
