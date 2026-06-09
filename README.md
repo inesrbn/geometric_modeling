@@ -216,6 +216,8 @@ subdivisionCatmullClark()
   ![](images/catmull.png)
   ![](images/catmull1.png)
   ![](images/catmull2.png)
+  ![](images/catmull3.png)
+  
 ---
 
 ## Mesh Simplification
