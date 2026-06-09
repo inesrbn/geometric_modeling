@@ -58,6 +58,8 @@ void computeNormals()
 - Each face computes its own normal
 - Each vertex accumulates normals from adjacent faces
 
+![](images/compute_normals.png)
+
 ```cpp
 void myFace::computeNormal()
 ```
@@ -67,6 +69,26 @@ void myFace::computeNormal()
 **Method:** Cross product: `(p2 - p1) x (p3 - p1)`
 
 ---
+
+## Silhouette Rendering
+
+```cpp
+MENU_DRAWSILHOUETTE
+````
+
+**Role:** Implements silhouette extraction and rendering of the mesh based on view-dependent edge detection.
+
+**Steps:**
+
+- Iterates over all half-edges of the mesh
+- For each edge, compares the orientation of its two adjacent face normals relative to the camera view direction
+- Computes dot products between face normals and the view vector
+- Detects silhouette edges when one face is visible (dot > 0) and the other is hidden (dot ≤ 0)
+- Stores selected edges in a temporary buffer
+- Renders these edges in red using OpenGL line primitives
+
+  ![](images/compute_normals.png)
+--
 
 ## Mesh Verification
 
@@ -150,6 +172,7 @@ generateRevolutionMesh(profile, slices)
 - Quad triangulation
 - Creating half-edges and twins
 
+  ![](images/revolution.png)
 ---
 
 ## Triangulation
@@ -172,6 +195,7 @@ triangulate(myFace* f)
 - Progressive vertex removal
 - Diagonal creation
 
+  ![](images/triangulate.png)
 ---
 
 ## Catmull-Clark Subdivision
@@ -189,6 +213,7 @@ subdivisionCatmullClark()
 - **Vertex points:** Catmull-Clark formula: `(F + 2R + (n-3)P) / n`
 - **Reconstruction:** creation of new quad faces, full half-edge rebuild, twin recomputation
 
+  ![](images/catmull.png)
 ---
 
 ## Mesh Simplification
@@ -227,26 +252,8 @@ collapseEdge(myHalfedge* h)
 - Removal of faces, edges, and vertex
 - Memory cleanup
 
+  ![](images/simplification.png)
 ---
-
-## Silhouette Rendering
-
-```cpp
-MENU_DRAWSILHOUETTE
-````
-
-**Role:** Implements silhouette extraction and rendering of the mesh based on view-dependent edge detection.
-
-**Steps:**
-
-- Iterates over all half-edges of the mesh
-- For each edge, compares the orientation of its two adjacent face normals relative to the camera view direction
-- Computes dot products between face normals and the view vector
-- Detects silhouette edges when one face is visible (dot > 0) and the other is hidden (dot ≤ 0)
-- Stores selected edges in a temporary buffer
-- Renders these edges in red using OpenGL line primitives
-
-
 
 ## Utility Functions
 
