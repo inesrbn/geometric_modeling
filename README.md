@@ -214,6 +214,8 @@ subdivisionCatmullClark()
 - **Reconstruction:** creation of new quad faces, full half-edge rebuild, twin recomputation
 
   ![](images/catmull.png)
+  ![](images/catmull1.png)
+  ![](images/catmull2.png)
 ---
 
 ## Mesh Simplification
@@ -253,6 +255,7 @@ collapseEdge(myHalfedge* h)
 - Memory cleanup
 
   ![](images/simplification.png)
+  ![](images/simplification1.png)
 ---
 
 ## Utility Functions
