@@ -48,25 +48,68 @@ bool myMesh::readFile(std::string filename)
 
 ## Normals
 
-```cpp
-void computeNormals()
-```
+### `void computeNormals()`
 
-**Role:** Computes normals for faces and vertices (averaged from adjacent faces).
+**Role:** Computes normals for faces and vertices.
 
 **Steps:**
-- Each face computes its own normal
-- Each vertex accumulates normals from adjacent faces
+- First, compute face normals
+- Then, compute vertex normals using adjacent faces
 
-![](images/compute_normals.png)
+---
 
-```cpp
-void myFace::computeNormal()
+### Face Normal
+
+#### `void myFace::computeNormal()`
+
+**Role:** Computes the geometric normal of a face.
+
+**Method:**
+- Take 3 consecutive vertices of the face
+- Build two edges
+- Compute cross product
+
+```
+(p2 - p1) × (p3 - p1)
 ```
 
-**Role:** Computes the normal of a triangular or polygonal face.
+Produces a perpendicular vector to the face, then normalized to unit length.
 
-**Method:** Cross product: `(p2 - p1) x (p3 - p1)`
+---
+
+### Vertex Normal
+
+#### `void myVertex::computeNormal()`
+
+**Role:** Computes smooth normals for shading.
+
+**Method:**
+- Traverse all faces around the vertex using the half-edge structure
+- Sum all adjacent face normals
+- Normalize the result
+
+**Traversal:** uses `step = step->prev->twin;` to walk around the neighborhood of the vertex.
+
+---
+
+### Mesh Normal Computation
+
+#### `void myMesh::computeNormals()`
+
+**Role:** Global normal computation.
+
+**Process:**
+1. Compute all face normals
+2. Compute all vertex normals (using face normals)
+
+```cpp
+for (faces)
+    face->computeNormal();
+
+for (vertices)
+    vertex->computeNormal();
+```
+![](images/compute_normals.png)
 
 ---
 
@@ -210,7 +253,7 @@ subdivisionCatmullClark()
 
 - **Face points:** average of each face's vertices
 - **Edge points:** average of `(v1 + v2 + f1 + f2) / 4`
-- **Vertex points:** Vertex points:
+- **Vertex points:**
   - F = average of adjacent face points
   - R = average of adjacent edge midpoints
   - P = original vertex position
