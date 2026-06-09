@@ -614,58 +614,94 @@ void myMesh::subdivisionCatmullClark()
 	}
 
 	//vertex points
-	for (myVertex* v : oldVertices)
+	for (unsigned int i = 0; i < oldVertices.size(); i++)
 	{
-		if (!v) continue;
+		myVertex* v = oldVertices[i];
+
+		if (v == NULL)
+			continue;
 
 		myVertex* nv = new myVertex();
-		vertexMap[v] = nv; 
+		vertexMap[v] = nv;
 
-		if (!v->originof) { // Sécurité pour les sommets déconnectés
-			nv->point = new myPoint3D(v->point->X, v->point->Y, v->point->Z);
+		// sécurité
+		if (v->originof == NULL)
+		{
+			nv->point = new myPoint3D(
+				v->point->X,
+				v->point->Y,
+				v->point->Z
+			);
 			continue;
 		}
 
-		double Fx = 0, Fy = 0, Fz = 0;
-		double Rx = 0, Ry = 0, Rz = 0;
+		double Fx = 0.0;
+		double Fy = 0.0;
+		double Fz = 0.0;
+
+		double Rx = 0.0;
+		double Ry = 0.0;
+		double Rz = 0.0;
+
 		int n = 0;
 
 		myHalfedge* start = v->originof;
 		myHalfedge* h = start;
-		bool valid = true;
 
-		do {
-			if (!h || !h->twin || !h->adjacent_face) { valid = false; break; }
+		do
+		{
+			if (h == NULL || h->twin == NULL || h->adjacent_face == NULL)
+				break;
 
-			Fx += facePoint[h->adjacent_face]->point->X;
-			Fy += facePoint[h->adjacent_face]->point->Y;
-			Fz += facePoint[h->adjacent_face]->point->Z;
+			// face Points
+			myVertex* fp = facePoint[h->adjacent_face];
 
-			myVertex* v2 = h->twin->source;
-			Rx += v2->point->X; Ry += v2->point->Y; Rz += v2->point->Z;
+			Fx += fp->point->X;
+			Fy += fp->point->Y;
+			Fz += fp->point->Z;
+
+			// edge Midpoints
+			myVertex* neighbour = h->twin->source;
+
+			Rx += (v->point->X + neighbour->point->X) * 0.5;
+			Ry += (v->point->Y + neighbour->point->Y) * 0.5;
+			Rz += (v->point->Z + neighbour->point->Z) * 0.5;
 
 			n++;
+
 			h = h->twin->next;
 
-		} while (h && h != start);
+		} while (h != start);
 
-		if (n > 0 && valid) {
-			Fx /= n; Fy /= n; Fz /= n;
-			Rx /= n; Ry /= n; Rz /= n;
-
-			double Px = v->point->X;
-			double Py = v->point->Y;
-			double Pz = v->point->Z;
-
+		if (n == 0)
+		{
 			nv->point = new myPoint3D(
-				(Fx + 2.0 * Rx + (n - 3.0) * Px) / n,
-				(Fy + 2.0 * Ry + (n - 3.0) * Py) / n,
-				(Fz + 2.0 * Rz + (n - 3.0) * Pz) / n
+				v->point->X,
+				v->point->Y,
+				v->point->Z
 			);
+			continue;
 		}
-		else {
-			nv->point = new myPoint3D(v->point->X, v->point->Y, v->point->Z);
-		}
+
+		// moyennes
+		Fx /= n;
+		Fy /= n;
+		Fz /= n;
+
+		Rx /= n;
+		Ry /= n;
+		Rz /= n;
+
+		double Px = v->point->X;
+		double Py = v->point->Y;
+		double Pz = v->point->Z;
+
+		// formule Catmull-Clark
+		double newX = (Fx + 2.0 * Rx + (n - 3.0) * Px) / n;
+		double newY = (Fy + 2.0 * Ry + (n - 3.0) * Py) / n;
+		double newZ = (Fz + 2.0 * Rz + (n - 3.0) * Pz) / n;
+
+		nv->point = new myPoint3D(newX, newY, newZ);
 	}
 
 	//reconnexion par quadrilateres
