@@ -210,7 +210,11 @@ subdivisionCatmullClark()
 
 - **Face points:** average of each face's vertices
 - **Edge points:** average of `(v1 + v2 + f1 + f2) / 4`
-- **Vertex points:** Catmull-Clark formula: `(F + 2R + (n-3)P) / n`
+- **Vertex points:** Vertex points:
+  - F = average of adjacent face points
+  - R = average of adjacent edge midpoints
+  - P = original vertex position
+  - New position computed using: `(F + 2R + (n-3)P) / n`
 - **Reconstruction:** creation of new quad faces, full half-edge rebuild, twin recomputation
 
   ![](images/catmull.png)
@@ -258,6 +262,7 @@ collapseEdge(myHalfedge* h)
 
   ![](images/simplification.png)
   ![](images/simplification1.png)
+  ![](images/simplification2.png)
 ---
 
 ## Utility Functions
@@ -284,7 +289,7 @@ Creates a triangle in a mesh with twin management.
 
 In this project, I used AI tools to help me understand several important concepts related to half-edge meshes and 3D surface geometry processing. When necessary, I also relied on external resources such as Wikipedia articles and explanatory YouTube videos to deepen my understanding and clarify more complex topics.
 
-One important observation concerns Catmull-Clark subdivision: in theory, it would have been possible to reuse existing local operations in my project, such as edge splits or face splits. However, I chose not to rely on these incremental operations. Instead, I completely rebuild the mesh at each subdivision step. This approach makes the algorithm easier to understand and more robust, even if it is less optimized than a fully incremental method.
+One important observation concerns Catmull-Clark subdivision: in theory, it would have been possible to reuse existing local operations in my project, such as edge splits or face splits. However, I chose not to rely on these incremental operations. Instead, I rebuild the entire mesh after computing the Catmull-Clark face points, edge points and vertex points, rather than modifying the existing topology incrementally. This approach makes the algorithm easier to understand and more robust, even if it is less optimized than a fully incremental method.
 
 This choice is also reflected in the overall architecture of the project: rather than gradually modifying the existing structure using local operations, I reconstruct the entire mesh after each major transformation. This contrasts with approaches that heavily rely on reusing splits and collapses to incrementally update topology. Here, I prioritize clarity and mesh consistency over local performance.
 
