@@ -255,7 +255,7 @@ subdivisionCatmullClark()
 - **Edge points:** average of `(v1 + v2 + f1 + f2) / 4`
 - **Vertex points:**
   - F = average of adjacent face points
-  - R = average of adjacent edge midpoints
+  - R = average of adjacent edge points (computed edge vertices)
   - P = original vertex position
   - New position computed using: `(F + 2R + (n-3)P) / n`
 - **Reconstruction:** creation of new quad faces, full half-edge rebuild, twin recomputation
