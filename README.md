@@ -87,7 +87,7 @@ MENU_DRAWSILHOUETTE
 - Stores selected edges in a temporary buffer
 - Renders these edges in red using OpenGL line primitives
 
-  ![](images/compute_normals.png)
+  ![](images/silhouette.png)
 --
 
 ## Mesh Verification
