@@ -229,6 +229,25 @@ collapseEdge(myHalfedge* h)
 
 ---
 
+## Silhouette Rendering
+
+```cpp
+MENU_DRAWSILHOUETTE
+````
+
+**Role:** Implements silhouette extraction and rendering of the mesh based on view-dependent edge detection.
+
+**Steps:**
+
+- Iterates over all half-edges of the mesh
+- For each edge, compares the orientation of its two adjacent face normals relative to the camera view direction
+- Computes dot products between face normals and the view vector
+- Detects silhouette edges when one face is visible (dot > 0) and the other is hidden (dot ≤ 0)
+- Stores selected edges in a temporary buffer
+- Renders these edges in red using OpenGL line primitives
+
+
+
 ## Utility Functions
 
 ```cpp
