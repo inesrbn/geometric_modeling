@@ -9,9 +9,15 @@ myHalfedge::myHalfedge(void)
 	twin = NULL;  
 }
 
-void myHalfedge::copy(myHalfedge *ie)
+void myHalfedge::copy(myHalfedge* ie)
 {
-/**** TODO ****/
+    if (!ie) return;
+
+    source = ie->source;
+    adjacent_face = ie->adjacent_face;
+    next = ie->next;
+    prev = ie->prev;
+    twin = ie->twin;
 }
 
 myHalfedge::~myHalfedge(void)

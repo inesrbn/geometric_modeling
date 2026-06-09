@@ -90,18 +90,32 @@ void myPoint3D::print(char *s)
 	std::cout << s << X << ", " << Y << ", " << Z << "\n";
 }
 
-double myPoint3D::dist(myPoint3D *p1, myPoint3D *p2)
+double myPoint3D::dist(myPoint3D* p1, myPoint3D* p2)
 {
 	//distance between current point, and the segment defined by p1,p2.
-	/**** TODO ****/
-	return 0.0;
+	myVector3D AB = *p2 - *p1;
+	myVector3D AP = *this - *p1;
+
+	double t = (AP * AB) / (AB * AB);
+
+	if (t < 0.0) return this->dist(*p1);
+	if (t > 1.0) return this->dist(*p2);
+
+	myPoint3D proj = *p1 + AB * t;
+	return this->dist(proj);
 }
 
-double myPoint3D::dist(myPoint3D *p1, myPoint3D *p2, myPoint3D *p3)
+
+double myPoint3D::dist(myPoint3D* p1, myPoint3D* p2, myPoint3D* p3)
 {
-	//distance  between current point, and the triangled defined by p1,p2,p3.
-	/**** TODO ****/
-	return 0.0;
+	// distance  between current point, and the triangled defined by p1, p2, p3.
+	myVector3D n = (*p2 - *p1).crossproduct(*p3 - *p1);
+	n.normalize();
+
+	myVector3D AP = *this - *p1;
+	double d = fabs(AP * n);
+
+	return d;
 }
 
 void myPoint3D::circumcenter(myPoint3D *p1, myPoint3D *p2, myPoint3D *p3, myPoint3D *p4)

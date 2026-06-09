@@ -297,18 +297,202 @@ void myMesh::normalize()
 
 void myMesh::splitFaceTRIS(myFace* f, myPoint3D* p)
 {
-	/**** TODO ****/
+	if (!f || !f->adjacent_halfedge) return;
+
+	myVertex* center = new myVertex();
+	center->point = new myPoint3D(*p);
+	vertices.push_back(center);
+
+	myHalfedge* start = f->adjacent_halfedge;
+
+	std::vector<myHalfedge*> loop;
+	myHalfedge* h = start;
+
+	do {
+		loop.push_back(h);
+		h = h->next;
+	} while (h != start);
+
+	int n = loop.size();
+	if (n < 3) return;
+
+	myFace* originalFace = f;
+
+	for (int i = 0; i < n; i++)
+	{
+		int j = (i + 1) % n;
+
+		myFace* nf = new myFace();
+		myHalfedge* h1 = new myHalfedge();
+		myHalfedge* h2 = new myHalfedge();
+		myHalfedge* h3 = new myHalfedge();
+
+		// triangle (center, vi, vi+1)
+		h1->source = center;
+		h2->source = loop[i]->source;
+		h3->source = loop[j]->source;
+
+		h1->next = h2; h2->next = h3; h3->next = h1;
+		h1->prev = h3; h2->prev = h1; h3->prev = h2;
+
+		h1->adjacent_face = nf;
+		h2->adjacent_face = nf;
+		h3->adjacent_face = nf;
+
+		nf->adjacent_halfedge = h1;
+
+		faces.push_back(nf);
+		halfedges.push_back(h1);
+		halfedges.push_back(h2);
+		halfedges.push_back(h3);
+	}
+
+	// suppression simple de la face originale
+	f->adjacent_halfedge = nullptr;
 }
+
 
 void myMesh::splitEdge(myHalfedge* e1, myPoint3D* p)
 {
+	if (!e1 || !e1->twin) return;
 
-	/**** TODO ****/
+	myHalfedge* e2 = e1->twin;
+	myVertex* v1 = e1->source;
+	myVertex* v2 = e2->source;
+
+	myFace* f1 = e1->adjacent_face;
+	myFace* f2 = e2->adjacent_face;
+
+	// nouveau sommet
+	myVertex* vNew = new myVertex();
+	vNew->point = new myPoint3D(*p);
+	vertices.push_back(vNew);
+
+	// on crée 2 nouvelles demi-arêtes (pour remplacer les sources locales)
+	myHalfedge* hNew1 = new myHalfedge();
+	myHalfedge* hNew2 = new myHalfedge();
+
+	myHalfedge* htNew1 = new myHalfedge();
+	myHalfedge* htNew2 = new myHalfedge();
+
+	halfedges.push_back(hNew1);
+	halfedges.push_back(hNew2);
+	halfedges.push_back(htNew1);
+	halfedges.push_back(htNew2);
+
+	// on reconnecte les sources
+	vNew->originof = hNew1;
+
+	// côté f1
+	hNew1->source = v1;
+	hNew2->source = vNew;
+
+	// côté f2
+	htNew1->source = vNew;
+	htNew2->source = v2;
+
+	// rewire face 1
+	hNew1->next = e1->next;
+	e1->next->prev = hNew1;
+
+	hNew1->prev = e1->prev;
+	e1->prev->next = hNew1;
+	hNew1->adjacent_face = f1;
+	hNew2->adjacent_face = f1;
+
+	// on remplace e1 par hNew1 dans la face
+	if (f1 && f1->adjacent_halfedge == e1)
+		f1->adjacent_halfedge = hNew1;
+
+	// rewire face 2
+	htNew1->next = e2->next;
+	e2->next->prev = htNew1;
+
+	htNew1->prev = e2->prev;
+	e2->prev->next = htNew1;
+	htNew1->adjacent_face = f2;
+	htNew2->adjacent_face = f2;
+
+	if (f2 && f2->adjacent_halfedge == e2)
+		f2->adjacent_halfedge = htNew1;
+
+	// position du nouveau sommet (milieu simple)
+	vNew->point->X = 0.5 * (v1->point->X + v2->point->X);
+	vNew->point->Y = 0.5 * (v1->point->Y + v2->point->Y);
+	vNew->point->Z = 0.5 * (v1->point->Z + v2->point->Z);
+
+	// on désactive les anciennes arêtes
+	e1->source = vNew;
+	e2->source = vNew;
+
+	// remettre originof propre
+	v1->originof = hNew1;
+	v2->originof = htNew1;
 }
 
 void myMesh::splitFaceQUADS(myFace* f, myPoint3D* p)
 {
-	/**** TODO ****/
+	if (!f || !f->adjacent_halfedge) return;
+
+	myVertex* center = new myVertex();
+	center->point = new myPoint3D(*p);
+	vertices.push_back(center);
+
+	myHalfedge* start = f->adjacent_halfedge;
+
+	std::vector<myHalfedge*> loop;
+	myHalfedge* h = start;
+
+	do {
+		loop.push_back(h);
+		h = h->next;
+	} while (h != start);
+
+	int n = loop.size();
+	if (n < 3) return;
+
+	for (int i = 0; i < n; i++)
+	{
+		int j = (i + 1) % n;
+
+		myFace* nf = new myFace();
+
+		myHalfedge* h1 = new myHalfedge();
+		myHalfedge* h2 = new myHalfedge();
+		myHalfedge* h3 = new myHalfedge();
+		myHalfedge* h4 = new myHalfedge();
+
+		h1->source = center;
+		h2->source = loop[i]->source;
+		h3->source = loop[j]->source;
+		h4->source = loop[j]->source;
+
+		// quad = 2 triangles implicites
+		h1->next = h2;
+		h2->next = h3;
+		h3->next = h4;
+		h4->next = h1;
+
+		h1->prev = h4;
+		h2->prev = h1;
+		h3->prev = h2;
+		h4->prev = h3;
+
+		h1->adjacent_face = nf;
+		h2->adjacent_face = nf;
+		h3->adjacent_face = nf;
+		h4->adjacent_face = nf;
+
+		nf->adjacent_halfedge = h1;
+
+		faces.push_back(nf);
+		halfedges.push_back(h1);
+		halfedges.push_back(h2);
+		halfedges.push_back(h3);
+		halfedges.push_back(h4);
+	}
+
+	f->adjacent_halfedge = nullptr;
 }
 
 
